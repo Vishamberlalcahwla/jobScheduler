@@ -22,10 +22,34 @@ Before running the project, ensure you have the following installed:
 
 Follow these steps to get the project running locally:
 
-### 1. Clone the Repository
+### Clone the Repository
 
 Clone this repository to your local machine:
 
 ```bash
 git clone https://github.com/Vishamberlalcahwla/jobScheduler.git
-cd jobScheduler
+cd jobScheduler 
+
+
+On macOS/Linux:
+python3 -m venv venv
+source venv/bin/activate
+
+On Windows:
+python -m venv venv
+venv\Scripts\activate
+
+Install Dependencies
+pip install -r requirements.txt
+
+Set Up the Database
+python manage.py migrate
+
+Run the Development Server
+python manage.py runserver
+
+Running the Job Scheduler
+python3 manage.py process_jobs
+
+Stopping the Server
+Ctrl + C
