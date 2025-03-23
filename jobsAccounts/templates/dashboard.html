@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Job Dashboard</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome for icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css" rel="stylesheet">
+
+    <!-- DataTables JS -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+    <style>
+        /* Use Flexbox to ensure all cards are of equal height */
+        .card-equal-height {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .card-body {
+            flex-grow: 1;
+        }
+
+        /* Optional: Ensure the container has a consistent height for each row */
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+        }
+
+        .col-md-3 {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container mt-4">
+        <h1 class="text-center mb-4">Job Scheduler Dashboard</h1>
+
+        <!-- Job Status Cards -->
+        <div class="row mb-4">
+            <!-- Pending Jobs -->
+            <div class="col-md-3">
+                <div class="card text-white bg-warning mb-3 card-equal-height">
+                    <div class="card-header">
+                        <i class="fas fa-clock"></i> Pending Jobs
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title">{{ pending_jobs.count }} Jobs</h5>
+                        <p class="card-text">These jobs are awaiting execution.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- In Progress Jobs -->
+            <div class="col-md-3">
+                <div class="card text-white bg-info mb-3 card-equal-height">
+                    <div class="card-header">
+                        <i class="fas fa-cogs"></i> In Progress Jobs
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title">{{ in_progress_jobs.count }} Jobs</h5>
+                        <p class="card-text">These jobs are currently being executed.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Completed Jobs -->
+            <div class="col-md-3">
+                <div class="card text-white bg-success mb-3 card-equal-height">
+                    <div class="card-header">
+                        <i class="fas fa-check-circle"></i> Completed Jobs
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title">{{ completed_jobs.count }} Jobs</h5>
+                        <p class="card-text">These jobs have been successfully completed.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Failed Jobs -->
+            <div class="col-md-3">
+                <div class="card text-white bg-danger mb-3 card-equal-height">
+                    <div class="card-header">
+                        <i class="fas fa-times-circle"></i> Failed Jobs
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title">{{ failed_jobs.count }} Jobs</h5>
+                        <p class="card-text">These jobs failed during execution.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analytics Section -->
+        <h3 class="mb-4">Job Analytics</h3>
+
+        <div class="row">
+            <!-- Average Wait Time -->
+            <div class="col-md-6">
+                <div class="card mb-3 card-equal-height">
+                    <div class="card-header">
+                        <i class="fas fa-clock"></i> Average Wait Time
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            {% if avg_wait_time %}
+                                {{ avg_wait_time }} minutes
+                            {% else %}
+                                No data available
+                            {% endif %}
+                        </h5>
+                        <p class="card-text">Average wait time for all jobs in the system.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Number of Jobs per Priority -->
+            <div class="col-md-6">
+                <div class="card mb-3 card-equal-height">
+                    <!-- Card Header -->
+                    <div class="card-header">
+                        <i class="fas fa-tasks"></i> Number of Jobs per Priority
+                    </div>
+                    <!-- Card Body -->
+                    <div class="card-body">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Priority Level</th>
+                                    <th>Number of Jobs</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in jobs_per_priority %}
+                                <tr>
+                                    <td>{{ item.priority_level }}</td>
+                                    <td>{{ item.job_count }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="2">No job data available</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Job Details Section -->
+        <h3 class="mb-4 mt-5">Job Details</h3>
+
+        <div class="row">
+            <!-- Jobs Table -->
+            <div class="col-md-12 mb-5">
+                <div class="card mb-3 card-equal-height">
+                    <div class="card-header">
+                        <i class="fas fa-clipboard-list"></i> Job Details
+                    </div>
+                    <div class="card-body">
+                        <table id="jobDetailsTable" class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Job Name</th>
+                                    <th>Priority</th>
+                                    <th>Status</th>
+                                    <th>Deadline</th>
+                                    <th>Estimated Duration (s)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for job in all_jobs %}
+                                <tr>
+                                    <td>{{ job.job_name }}</td>
+                                    <td>{{ job.priority_level }}</td>
+                                    <td>
+                                        {% if job.status == 'Pending' %}
+                                        <span class="badge bg-warning">{{ job.status }}</span>
+                                        {% elif job.status == 'In Progress' %}
+                                        <span class="badge bg-primary">{{ job.status }}</span>
+                                        {% elif job.status == 'Completed' %}
+                                        <span class="badge bg-success">{{ job.status }}</span>
+                                        {% elif job.status == 'Failed' %}
+                                        <span class="badge bg-danger">{{ job.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ job.deadline }}</td>
+                                    <td>{{ job.estimated_duration }}</td>
+                                   
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center">No job data available</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $('#jobDetailsTable').DataTable({
+                "paging": true,
+                "searching": true,
+                "ordering": true,
+                "info": true,
+                "autoWidth": false
+            });
+        });
+    </script>
+</body>
+</html>
