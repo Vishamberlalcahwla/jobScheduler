@@ -128,22 +128,50 @@
                 $("#deadline").val(today);
             });
 
+            // Function to format date as DD-MM-YYYY
+            function formatDate(dateStr) {
+                let date = new Date(dateStr);
+                return date.toLocaleDateString("en-GB"); // "DD/MM/YYYY" format
+            }
+
+            // Function to add color to status
+            function getStatusBadge(status) {
+                let statusColors = {
+                    "Pending": "badge bg-warning text-dark",
+                    "In Progress": "badge bg-primary",
+                    "Completed": "badge bg-success",
+                    "Failed": "badge bg-danger"
+                };
+                return `<span class="${statusColors[status] || 'badge bg-secondary'}">${status}</span>`;
+            }
+
+            // Function to add color to priority
+            function getPriorityBadge(priority) {
+                let priorityColors = {
+                    "High": "badge bg-danger",
+                    "Medium": "badge bg-warning text-dark",
+                    "Low": "badge bg-success"
+                };
+                return `<span class="${priorityColors[priority] || 'badge bg-secondary'}">${priority}</span>`;
+            }
+
             // Handle Form Submission
             $("#jobForm").submit(function (event) {
                 event.preventDefault();
                 let jobData = {
-                    job_name            : $("#jobName").val(),
-                    estimated_duration  : $("#estimatedDuration").val(),
-                    priority_level      : $("#priorityLevel").val(),
-                    deadline            : $("#deadline").val(),
-                    status              : "Pending"
-                };    
+                    job_name: $("#jobName").val(),
+                    estimated_duration: $("#estimatedDuration").val(),
+                    priority_level: $("#priorityLevel").val(),
+                    deadline: $("#deadline").val(),
+                    status: "Pending"
+                };
+
                 fetch("/api/jobs/create/", {
-                    method  : "POST",
-                    headers : {
+                    method: "POST",
+                    headers: {
                         "Content-Type": "application/json",
                         "X-CSRFToken": "{{ csrf_token }}",
-                        "Authorization": "Bearer " + localStorage.getItem("access_token") // Assuming JWT Auth
+                        "Authorization": "Bearer " + localStorage.getItem("access_token")
                     },
                     body: JSON.stringify(jobData)
                 })
@@ -153,9 +181,9 @@
                         table.row.add([
                             data.job.job_name,
                             data.job.estimated_duration,
-                            data.job.priority_level,
-                            data.job.deadline,
-                            data.job.status
+                            getPriorityBadge(data.job.priority_level),
+                            formatDate(data.job.deadline),
+                            getStatusBadge(data.job.status)
                         ]).draw();
                         $("#jobForm")[0].reset();
                         $("#jobModal").modal("hide");
@@ -167,7 +195,7 @@
                 })
                 .catch(error => console.error("Error:", error));
             });
-    
+
             // Fetch jobs from API when page loads
             fetch("/api/jobs/", {
                 method: "GET",
@@ -181,27 +209,14 @@
                     table.row.add([
                         job.job_name,
                         job.estimated_duration,
-                        job.priority_level,
-                        job.deadline,
-                        job.status
+                        getPriorityBadge(job.priority_level),
+                        formatDate(job.deadline),
+                        getStatusBadge(job.status)
                     ]).draw();
                 });
             })
             .catch(error => console.error("Error fetching jobs:", error));
         });
-
-        function logout() {
-            fetch("{% url 'logout' %}", {
-                method: "POST",
-                headers: { "X-CSRFToken": "{{ csrf_token }}" }
-            })
-            .then(response => {
-                if (response.redirected) {
-                    window.location.href = response.url;
-                }
-            });
-        }
     </script>
-
 </body>
 </html>
